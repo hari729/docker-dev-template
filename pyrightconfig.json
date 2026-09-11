@@ -12,9 +12,9 @@
     "install/my_inters/lib/python3.12/site-packages",
     "/opt/ros/humble/lib/python3.10/site-packages"
   ],
-  "reportMissingImports": "warning",
-  "reportMissingModuleSource": "none",
-  "pythonVersion": "3.10",
-  "pythonPlatform": "Linux",
-  "reportPrivateImportUsage": "none"
+  "typeCheckingMode": "basic",
+  "reportPrivateImportUsage": "none",
+  "reportUnusedCallResult": "none",
+  "pythonVersion": "3.12",
+  "pythonPlatform": "Linux"
 }
