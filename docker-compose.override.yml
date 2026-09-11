@@ -6,7 +6,7 @@ services:
   ros2:
     build:
       target: dev
-    image: ros2dev/dev:${ROS_DISTRO:-jazzy}
+    image: ros2/dev:${ROS_DISTRO:-jazzy}
     container_name: ros2-dev
 
     pid: host
