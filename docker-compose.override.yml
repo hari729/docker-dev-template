@@ -1,0 +1,22 @@
+# NOT committed (add to .gitignore). Picked up automatically by
+# `docker compose up` alongside docker-compose.yml.
+# Builds the dev stage on top of base+deps and wires up everything that
+# used to be devcontainer.json's runArgs / mounts / containerEnv.
+services:
+  ros2:
+    build:
+      target: dev
+    image: ros2dev/dev:${ROS_DISTRO:-jazzy}
+    container_name: ros2-dev
+
+    pid: host
+    cap_add:
+      - SYS_PTRACE
+
+    volumes:
+      - ${HOME}/.config/nvim:/home/ros/.config/nvim:cached
+
+    command: sleep infinity
+    stdin_open: true
+    tty: true
+
