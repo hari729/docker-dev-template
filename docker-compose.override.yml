@@ -6,8 +6,8 @@ services:
   ros2:
     build:
       target: dev
-    image: ros2/dev:${ROS_DISTRO:-jazzy}
-    container_name: ros2-dev
+    image: ${COMPOSE_PROJECT_NAME}:${ROS_DISTRO:-jazzy}-dev
+    container_name: ${COMPOSE_PROJECT_NAME}-dev
 
     pid: host
     cap_add:

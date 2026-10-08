@@ -14,9 +14,9 @@ pair for building and running it — no devcontainers, no Makefile.
     debug adapters are installed by Mason when neovim starts, so the image does
     not need to track your host neovim config. Only needed for development.
 
-- **`docker-compose.yml`** *(committed)* — builds the `base` stage and wires
-  up everything needed to actually run it: host networking, IPC, GPU access,
-  X11 forwarding, and the workspace bind mount.
+- **`docker-compose.yml`** *(committed)* — sets the Compose project name,
+  builds the `base` stage and wires up everything needed to actually run it:
+  host networking, IPC, GPU access, X11 forwarding, and the workspace bind mount.
 
 - **`docker-compose.override.yml`** *(committed)* — adds the `dev` stage
   tooling on top: builds `target: dev`, mounts your local neovim config,
@@ -46,15 +46,21 @@ pass a real `command:` (e.g. a `ros2 launch ...`) in `docker-compose.yml`.
 
 ## First-time setup
 
-1. `docker-compose.override.yml` is committed in this template. If you want to
-   keep project-specific overrides private, copy it to
-   `docker-compose.override.yml` (Compose picks it up automatically) and add
-   your copy to `.gitignore`.
-2. Optionally create a local `.env` (also gitignored) to pin your host UID/GID:
+1. Change the project name in `docker-compose.yml`:
+   ```yaml
+   name: my-project
+   ```
+   Compose uses this value for everything — images, container, and volume — so
+   use a unique name per checkout. With `name: my-project` you get:
+   - base image: `my-project:jazzy`
+   - dev image: `my-project:jazzy-dev`
+   - dev container: `my-project-dev`
+   - volume: `my-project_nvim-data`
+2. Optionally create a local `.env` (also gitignored) if your host UID/GID is
+   not `1000`:
    ```
    USER_UID=1000
    USER_GID=1000
-   ROS_DISTRO=jazzy
    ```
 3. GPU support requires the NVIDIA Container Toolkit on the host and Docker
    Compose v2. If you don't need GPU/rendering, delete the
@@ -62,6 +68,9 @@ pass a real `command:` (e.g. a `ros2 launch ...`) in `docker-compose.yml`.
 
 ## Customizing per project
 
+- Project name: change `name:` in `docker-compose.yml`. This is what keeps
+  images, containers, and volumes isolated when you use the same template in
+  multiple directories.
 - ROS packages: edit the `apt-get install` list in the `base` stage of the
   `Dockerfile` (the block that installs `ros-${ROS_DISTRO}-*` packages).
 - Dev tooling: edit the `dev` stage. Mason-managed packages are stored in the

@@ -1,3 +1,4 @@
+name: my-project
 services:
   ros2:
     build:
@@ -8,11 +9,12 @@ services:
         ROS_DISTRO: ${ROS_DISTRO:-jazzy}
         USER_UID: ${USER_UID:-1000}
         USER_GID: ${USER_GID:-1000}
-    image: ros2/base:${ROS_DISTRO:-jazzy}
+    image: ${COMPOSE_PROJECT_NAME}:${ROS_DISTRO:-jazzy}
+    container_name: ${COMPOSE_PROJECT_NAME}
 
     network_mode: host
     ipc: host
-    
+
     environment:
       DISPLAY: ${DISPLAY}
       NVIDIA_VISIBLE_DEVICES: all
