@@ -66,9 +66,11 @@ CMD ["bash"]
 
 # =============================================================================
 # STAGE 2: dev
-# Editor, LSPs, shell QoL, build tooling — everything you want in every ROS2
-# project regardless of robot/sim target. Built on top of base+deps.
-# Only the docker-compose override (uncommitted) builds this stage.
+# Editor, shell QoL, and build/debug tooling shared across every ROS2 project.
+# Neovim language servers, formatters, linters and debug adapters are managed
+# by Mason inside the running container, so this layer does not need to change
+# when the host Neovim config is updated.
+# Built on top of base+deps. Only the docker-compose override builds this stage.
 # =============================================================================
 FROM base AS dev
 
@@ -83,32 +85,26 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         fzf \
         unzip \
         wget \
+        tar \
+        gzip \
         build-essential \
         gdb \
-        clang \
-        clang-tools \
-        clang-format \
-        clangd \
+        default-jre-headless \
         python3 \
         python3-venv \
-        pipx \
-        default-jre-headless \
+        python3-pip \
         xterm \
         x11-apps \
     && mkdir -p /etc/apt/keyrings \
     && curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key \
        | gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg \
-    && echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_20.x nodistro main" \
+    && echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_24.x nodistro main" \
        > /etc/apt/sources.list.d/nodesource.list \
     && rm -rf /var/lib/apt/lists/*
 
-ENV CARGO_HOME=/usr/local/cargo
-ENV PATH="${CARGO_HOME}/bin:${PATH}"
-
-RUN mkdir -p ${CARGO_HOME} \
-    && curl -L --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/cargo-bins/cargo-binstall/main/install-from-binstall-release.sh | bash \
-    && cargo-binstall --no-confirm tree-sitter-cli \
-    && chmod -R a+rX ${CARGO_HOME}
+# --- Node.js 24 LTS (required by Mason for npm-based packages) ---
+RUN apt-get update && apt-get install -y --no-install-recommends nodejs \
+    && rm -rf /var/lib/apt/lists/*
 
 # --- Neovim, latest stable, glibc build (matches the Ubuntu base image) ---
 ARG NVIM_ARCH=linux-x86_64
@@ -117,32 +113,12 @@ RUN curl -LO https://github.com/neovim/neovim/releases/latest/download/nvim-${NV
     && ln -s /opt/nvim-${NVIM_ARCH}/bin/nvim /usr/local/bin/nvim \
     && rm nvim-${NVIM_ARCH}.tar.gz
 
-ENV PIPX_BIN_DIR=/usr/local/bin
-ENV PIPX_HOME=/opt/pipx
-
-# - ruff: Ultra-fast Python linter and code formatter used by LazyVim conform/lint
-# - debugpy: Python DAP adapter backend used by nvim-dap-python
-RUN pipx install ruff debugpy basedpyright cmake-language-server
-
-# --- Node-based language servers (Pyright & YAML) ---
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    nodejs \
-    && npm install -g --no-fund --no-audit \
-    yaml-language-server
-
-# --- lemminx (XML LSP — covers package.xml, URDF/xacro) ---
-RUN LEMMINX_VERSION=$(curl -s https://api.github.com/repos/eclipse-lemminx/lemminx/releases/latest | grep -oP '"tag_name": "\K[^"]+') \
-    && mkdir -p /opt/lemminx \
-    && curl -L "https://download.eclipse.org/lemminx/releases/${LEMMINX_VERSION}/org.eclipse.lemminx-uber.jar" -o /opt/lemminx/lemminx-uber.jar \
-    && printf '#!/bin/sh\nexec java -jar /opt/lemminx/lemminx-uber.jar "$@"\n' > /usr/local/bin/lemminx \
-    && chmod +x /usr/local/bin/lemminx
-
-# --- codelldb (DAP adapter, self-contained — bundles its own LLDB) ---
-RUN curl -L "https://github.com/vadimcn/codelldb/releases/latest/download/codelldb-linux-x64.vsix" -o /tmp/codelldb.vsix \
-    && mkdir -p /opt/codelldb \
-    && unzip -q /tmp/codelldb.vsix -d /opt/codelldb \
-    && chmod +x /opt/codelldb/extension/adapter/codelldb \
-    && rm /tmp/codelldb.vsix
+# --- Mason writes its packages and Neovim writes state to ~/.local/share/nvim.
+#     Pre-create the directory owned by the runtime user so a named volume
+#     mounted here gets the right ownership instead of falling back to root.
+# ---
+RUN mkdir -p /home/$USERNAME/.local/share/nvim /home/$USERNAME/.local/state/nvim \
+    && chown -R $USERNAME:$USERNAME /home/$USERNAME/.local
 
 USER $USERNAME
 CMD ["bash"]

@@ -1,4 +1,4 @@
-# NOT committed (add to .gitignore). Picked up automatically by
+# Committed as part of this template. Picked up automatically by
 # `docker compose up` alongside docker-compose.yml.
 # Builds the dev stage on top of base+deps and wires up everything that
 # used to be devcontainer.json's runArgs / mounts / containerEnv.
@@ -15,8 +15,11 @@ services:
 
     volumes:
       - ${HOME}/.config/nvim:/home/ros/.config/nvim:cached
+      - nvim-data:/home/ros/.local/share/nvim
 
     command: sleep infinity
     stdin_open: true
     tty: true
 
+volumes:
+  nvim-data:
